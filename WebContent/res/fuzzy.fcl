@@ -1,0 +1,162 @@
+FUNCTION_BLOCK WordCloud	// Block definition - there may be one block per file
+
+	VAR_INPUT				// define input variables
+		meta : REAL;		// input variable representing the score passed in for the title 
+	    title : REAL;	    // input variable representing the score passed in for the title 
+	    headings : REAL;	// input variable representing the score passed in for the headings
+	END_VAR
+
+	VAR_OUTPUT				// define output variables
+    	score : REAL;		// output variable representing the score based on the input variables
+	END_VAR
+	
+	
+	// fuzzy sets and membership functions for the meta tag is based off the Suegno inference method
+	// meta score passed in based on the meta content tag found for a web page
+	// meta content can hold valuable info about a web page and are used with many web crawlers
+	// the weighted value for meta content goes up by 50 and is capped at 400
+	
+	FUZZIFY meta
+		TERM low := (0, 1) (50, 1) (100, 0);
+		TERM average := trian 100 150 200;
+		TERM high := trian 200 250 300;
+		TERM relevant := (300, 0) (350, 1) (400, 1);
+	END_FUZZIFY
+	
+	// the fuzzy sets and membership functions for the title are based of the Suegno inference method
+	// the weighted value for the title of a web page goes up by 20
+	// the value is capped at 100
+	 
+	FUZZIFY title
+		TERM low := (0, 1) (20, 1) (40, 0);
+		TERM average := trian 40 50 60;
+		TERM high := trian 60 70 80;
+		TERM relevant := (80, 0) (90, 1) (100, 1);
+	END_FUZZIFY
+	
+	// the fuzzy sets and membership functions for the headings are based of the Suegno inference method
+	// the weighted value for the headings of a web page goes up by 10
+	// the value is capped at 100
+	
+	FUZZIFY headings
+		TERM low := (0, 1) (10, 1) (20, 0);
+		TERM average := trian 20 35 50;
+		TERM high := trian 50 65 80;
+		TERM relevant := (80, 0) (90, 1) (100, 1);
+	END_FUZZIFY
+	
+	// the score value is calculated using the centre of gravity singleton method
+	// this method works well for non critical jobs
+	// the value is capped at 80 and defaults to 0 if no fuzzy rule activated
+	
+	DEFUZZIFY score
+    	TERM low := 20;
+    	TERM average := 40;
+    	TERM high := 60;
+    	TERM relevant := 80;
+    	
+    	METHOD : COGS;
+    	DEFAULT := 0;
+	END_DEFUZZIFY
+	
+	RULEBLOCK No1
+		AND : MIN;	// min used in place for and
+		ACT : MIN;	// min activation method
+		ACCU : MAX; // max accumulation method
+		
+		// The fuzzy rules for this file are listed below. The idea was to try and cover all possibilities
+		// The rules are separated by white space and can be thought of as blocks of 4
+		// where the rule is based heavily on the meta score and using an or clause between the other two to assign a score 
+		
+		// block 1
+		
+		RULE 1 : IF meta IS relevant AND title IS relevant OR headings IS relevant THEN score IS relevant;
+		RULE 2 : IF meta IS relevant AND title IS relevant OR headings IS high THEN score IS relevant;
+		RULE 3 : IF meta IS relevant AND title IS relevant OR headings IS average THEN score IS relevant;
+		RULE 4 : IF meta IS relevant AND title IS relevant OR headings IS low THEN score IS relevant;
+		
+		RULE 5 : IF meta IS relevant AND title IS high OR headings IS relevant THEN score IS relevant;
+		RULE 6 : IF meta IS relevant AND title IS high OR headings IS high THEN score IS relevant;
+		RULE 7 : IF meta IS relevant AND title IS high OR headings IS average THEN score IS relevant;
+		RULE 8 : IF meta IS relevant AND title IS high OR headings IS low THEN score IS relevant;
+		
+		RULE 9 : IF meta IS relevant AND title IS average OR headings IS relevant THEN score IS relevant;
+		RULE 10 : IF meta IS relevant AND title IS average OR headings IS high THEN score IS relevant;
+		RULE 11 : IF meta IS relevant AND title IS average OR headings IS average THEN score IS relevant;
+		RULE 12 : IF meta IS relevant AND title IS average OR headings IS low THEN score IS relevant;
+		
+		RULE 13 : IF meta IS relevant AND title IS low OR headings IS relevant THEN score IS relevant;
+		RULE 14 : IF meta IS relevant AND title IS low OR headings IS high THEN score IS relevant;
+		RULE 15 : IF meta IS relevant AND title IS low OR headings IS average THEN score IS relevant;
+		RULE 16 : IF meta IS relevant AND title IS low OR headings IS low THEN score IS relevant;
+		
+		// block 2
+		
+		RULE 17 : IF meta IS high AND title IS relevant OR headings IS relevant THEN score IS relevant;
+		RULE 18 : IF meta IS high AND title IS relevant OR headings IS high THEN score IS relevant;
+		RULE 19 : IF meta IS high AND title IS relevant OR headings IS average THEN score IS relevant;
+		RULE 20 : IF meta IS high AND title IS relevant OR headings IS low THEN score IS relevant;
+		
+		RULE 21 : IF meta IS high AND title IS high OR headings IS relevant THEN score IS relevant;
+		RULE 22 : IF meta IS high AND title IS high OR headings IS high THEN score IS high;
+		RULE 23 : IF meta IS high AND title IS high OR headings IS average THEN score IS high;
+		RULE 24 : IF meta IS high AND title IS high OR headings IS low THEN score IS high;
+		
+		RULE 26 : IF meta IS high AND title IS average OR headings IS relevant THEN score IS high;
+		RULE 27 : IF meta IS high AND title IS average OR headings IS high THEN score IS high;
+		RULE 28 : IF meta IS high AND title IS average OR headings IS average THEN score IS high;
+		RULE 29 : IF meta IS high AND title IS average OR headings IS low THEN score IS average;
+		
+		RULE 30 : IF meta IS high AND title IS low OR headings IS relevant THEN score IS high;
+		RULE 31 : IF meta IS high AND title IS low OR headings IS high THEN score IS high;
+		RULE 32 : IF meta IS high AND title IS low OR headings IS average THEN score IS average;
+		RULE 33 : IF meta IS high AND title IS low OR headings IS low THEN score IS average;
+		
+		// block 3
+		
+		RULE 34 : IF meta IS average AND title IS relevant OR headings IS relevant THEN score IS relevant;
+		RULE 35 : IF meta IS average AND title IS relevant OR headings IS high THEN score IS high;
+		RULE 36 : IF meta IS average AND title IS relevant OR headings IS average THEN score IS high;
+		RULE 37 : IF meta IS average AND title IS relevant OR headings IS low THEN score IS average;
+		
+		RULE 38 : IF meta IS average AND title IS high OR headings IS relevant THEN score IS relevant;
+		RULE 39 : IF meta IS average AND title IS high OR headings IS high THEN score IS high;
+		RULE 40 : IF meta IS average AND title IS high OR headings IS average THEN score IS high;
+		RULE 41 : IF meta IS average AND title IS high OR headings IS low THEN score IS average;
+		
+		RULE 42 : IF meta IS average AND title IS average OR headings IS relevant THEN score IS high;
+		RULE 43 : IF meta IS average AND title IS average OR headings IS high THEN score IS high;
+		RULE 44 : IF meta IS average AND title IS average OR headings IS average THEN score IS average;
+		RULE 45 : IF meta IS average AND title IS average OR headings IS low THEN score IS average;
+		
+		RULE 46 : IF meta IS average AND title IS low OR headings IS relevant THEN score IS average;
+		RULE 47 : IF meta IS average AND title IS low OR headings IS high THEN score IS average;
+		RULE 48 : IF meta IS average AND title IS low OR headings IS average THEN score IS average;
+		RULE 49 : IF meta IS average AND title IS low OR headings IS low THEN score IS low;
+		
+		// block 4
+		
+		RULE 50 : IF meta IS low AND title IS relevant OR headings IS relevant THEN score IS relevant;
+		RULE 51 : IF meta IS low AND title IS relevant OR headings IS high THEN score IS high;
+		RULE 52 : IF meta IS low AND title IS relevant OR headings IS average THEN score IS high;
+		RULE 53 : IF meta IS low AND title IS relevant OR headings IS low THEN score IS average;
+		
+		RULE 54 : IF meta IS low AND title IS high OR headings IS relevant THEN score IS relevant;
+		RULE 55 : IF meta IS low AND title IS high OR headings IS high THEN score IS high;
+		RULE 56 : IF meta IS low AND title IS high OR headings IS average THEN score IS average;
+		RULE 57 : IF meta IS low AND title IS high OR headings IS low THEN score IS average;
+		
+		RULE 58 : IF meta IS low AND title IS average OR headings IS relevant THEN score IS average;
+		RULE 59 : IF meta IS low AND title IS average OR headings IS high THEN score IS average;
+		RULE 60 : IF meta IS low AND title IS average OR headings IS average THEN score IS average;
+		RULE 61 : IF meta IS low AND title IS average OR headings IS low THEN score IS low;
+		
+		RULE 62 : IF meta IS low AND title IS low OR headings IS relevant THEN score IS average;
+		RULE 63 : IF meta IS low AND title IS low OR headings IS high THEN score IS average;
+		RULE 64 : IF meta IS low AND title IS low OR headings IS average THEN score IS average;
+		RULE 65 : IF meta IS low AND title IS low OR headings IS low THEN score IS low;
+		
+	END_RULEBLOCK
+
+
+END_FUNCTION_BLOCK
